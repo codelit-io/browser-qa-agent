@@ -1,0 +1,27 @@
+{
+  "name": "@codelit/browser-qa-agent",
+  "version": "1.0.0",
+  "description": "Guarded local Playwright QA with screenshots, runtime evidence, and no hosted browser bill.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "browser-qa": "bin/browser-qa.mjs"
+  },
+  "files": [
+    "agent-workflow",
+    "bin",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup": "playwright install chromium",
+    "audit": "node bin/browser-qa.mjs",
+    "test": "node --test",
+    "verify": "node bin/browser-qa.mjs --help && npm test"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}

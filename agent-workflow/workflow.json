@@ -1,0 +1,162 @@
+{
+  "title": "Browser QA Agent",
+  "description": "A guarded local browser team that inspects one approved website, captures visible evidence, and reports usability and runtime failures without signing in or changing data.",
+  "audience": "Product teams that want repeatable browser checks without a hosted browser bill",
+  "goal": "Produce a local screenshot and structured QA report for one explicitly approved website.",
+  "triggers": [
+    {
+      "id": "trigger-cli",
+      "name": "Local CLI",
+      "source": "Terminal",
+      "event": "browser-qa requested",
+      "description": "A human supplies the target URL and approved host boundary."
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool-playwright",
+      "name": "Local Playwright",
+      "type": "browser",
+      "description": "Open an isolated, unsigned browser context and capture visible evidence.",
+      "authMode": "none",
+      "riskLevel": "low"
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent-policy",
+      "name": "Boundary Guard",
+      "role": "Validates the target, request method, and network boundary.",
+      "responsibilities": [
+        "Require an approved host",
+        "Block private networks by default",
+        "Block state-changing HTTP methods"
+      ],
+      "input": "URL and explicit host allowlist",
+      "output": "Approved read-only browser policy",
+      "tools": [],
+      "modelPreference": "Deterministic policy",
+      "escalationPolicy": "Stop when the URL or network boundary is unsafe."
+    },
+    {
+      "id": "agent-observer",
+      "name": "Page Observer",
+      "role": "Loads the approved page and captures bounded visible evidence.",
+      "responsibilities": [
+        "Capture one viewport",
+        "Collect console and request failures",
+        "Summarize visible structure"
+      ],
+      "input": "Approved browser policy",
+      "output": "Screenshot and browser observations",
+      "tools": [
+        "tool-playwright"
+      ],
+      "modelPreference": "Deterministic browser runtime",
+      "escalationPolicy": "Stop on redirect, timeout, or blocked-host ambiguity."
+    },
+    {
+      "id": "agent-verifier",
+      "name": "QA Verifier",
+      "role": "Turns observations into a local review report.",
+      "responsibilities": [
+        "Report overflow",
+        "Report missing labels",
+        "Preserve exact runtime errors"
+      ],
+      "input": "Browser observations",
+      "output": "JSON and Markdown QA report",
+      "tools": [],
+      "modelPreference": "Deterministic checks",
+      "escalationPolicy": "Leave interpretation to a human when visible evidence is ambiguous."
+    }
+  ],
+  "steps": [
+    {
+      "id": "step-policy",
+      "title": "Approve browser boundary",
+      "actor": "agent-policy",
+      "action": "Validate the URL, allowed hosts, protocol, and network destinations.",
+      "onSuccess": "Start an isolated browser context.",
+      "onFailure": "Stop before a browser starts.",
+      "next": [
+        "step-observe"
+      ]
+    },
+    {
+      "id": "step-observe",
+      "title": "Capture page evidence",
+      "actor": "agent-observer",
+      "action": "Open the approved page, block writes, and capture one stable viewport plus runtime signals.",
+      "onSuccess": "Pass evidence to deterministic QA checks.",
+      "onFailure": "Save the exact browser failure.",
+      "next": [
+        "step-verify"
+      ]
+    },
+    {
+      "id": "step-verify",
+      "title": "Write QA report",
+      "actor": "agent-verifier",
+      "action": "Write bounded JSON and Markdown artifacts without sending page content to a model or service.",
+      "onSuccess": "Return artifact paths.",
+      "onFailure": "Return the local write error.",
+      "next": []
+    }
+  ],
+  "modelRoutes": [
+    {
+      "id": "route-deterministic",
+      "task": "Browser QA",
+      "provider": "Local",
+      "model": "Playwright and DOM checks",
+      "reason": "The public runner does not require an AI key.",
+      "fallback": "Human review"
+    }
+  ],
+  "guardrails": [
+    {
+      "id": "guardrail-network",
+      "title": "Public network only",
+      "policy": "Private, loopback, link-local, and unapproved hosts are blocked unless the human explicitly enables local fixture testing.",
+      "severity": "high"
+    },
+    {
+      "id": "guardrail-read-only",
+      "title": "Read-only requests",
+      "policy": "POST, PUT, PATCH, DELETE, and other state-changing browser requests are blocked.",
+      "severity": "high"
+    },
+    {
+      "id": "guardrail-ephemeral",
+      "title": "Ephemeral session",
+      "policy": "The runner does not load a user profile, cookies, extensions, or saved credentials.",
+      "severity": "high"
+    }
+  ],
+  "evaluations": [
+    {
+      "id": "eval-domain",
+      "title": "Host containment",
+      "metric": "Requests remain inside the approved host set",
+      "threshold": "100%"
+    },
+    {
+      "id": "eval-write",
+      "title": "Write blocking",
+      "metric": "State-changing HTTP requests are blocked",
+      "threshold": "100%"
+    },
+    {
+      "id": "eval-evidence",
+      "title": "Evidence completeness",
+      "metric": "Successful audits include JSON, Markdown, and a screenshot",
+      "threshold": "100%"
+    }
+  ],
+  "deployTargets": [
+    "Local Node.js process",
+    "Ephemeral Chromium context",
+    "Local artifact directory"
+  ]
+}

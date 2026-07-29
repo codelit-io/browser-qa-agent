@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "workflow": "agent-workflow/workflow.json",
+  "template": "openclaw-browser-operations-agent",
+  "openInCodelit": "https://codelit.io/agents/openclaw-browser-operations-agent?sample=1&source=github&utm_source=github&utm_medium=repository&utm_campaign=github_open_source&utm_content=browser-qa-agent"
+}
