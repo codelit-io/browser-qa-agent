@@ -22,6 +22,6 @@
     "verify": "node bin/browser-qa.mjs --help && npm test"
   },
   "dependencies": {
-    "playwright": "^1.60.0"
+    "playwright": "^1.64.1"
   }
 }
